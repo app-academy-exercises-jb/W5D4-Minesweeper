@@ -2,7 +2,6 @@ require_relative 'tile.rb'
 require 'byebug'
 
 class Board
-
   attr_reader :grid
 
   def self.fill_board(grid, num)
@@ -34,13 +33,6 @@ class Board
     end
   end
 
-  # 1-2 enumerables
-  # 0-1 challenge problems
-  # 1-2 recursion problems
-  # 1 arr manipulation
-  # 1 string manipulation
-  # 1 search/sort
-
   def self.neighbors(tile_position, size)
     positions = []
     
@@ -57,10 +49,16 @@ class Board
 
     positions
   end
+  # 1-2 enumerables
+  # 0-1 challenge problems
+  # 1-2 recursion problems
+  # 1 arr manipulation
+  # 1 string manipulation
+  # 1 search/sort
 
   def initialize(n)
     @grid = Array.new(n) { Array.new(n) { Tile.new } }
-    
+    @revealed_locations = []
     # 20% of grid will be bombs
     num_bombs = (@grid.length * @grid.length) / 6
     Board.fill_board(@grid, num_bombs)
@@ -68,16 +66,47 @@ class Board
   end
 
   def render
-    self.grid.each do |row|
+    puts "  #{(0..self.grid.length - 1).map(&:to_s).join("") }"
+    self.grid.each_with_index do |row,idx|
       line = ''
+      line += idx.to_s + " "
       row.each do |tile|
-        print tile#.value.to_s
+        line += tile.to_s
       end
 
       puts line
     end
   end
 
+  def fully_flagged?
+    @grid.each { |row|
+      row.all? { |tile| tile.revealed == true && tile.correctly_flagged? } ? next : (return false)
+    }
+  end
+
+  def reveal(location)
+    @revealed_locations << location
+    pos = @grid[location[0]][location[1]]
+    return true if pos.flagged == true
+    result = pos.reveal
+    result == :B ? (return false) : (reveal_neighbors(location); return true)
+  end
+
+  def reveal_neighbors(location)
+    locations = self.class.neighbors(location, grid[0].length-1) - @revealed_locations
+    neighbors = locations.map { |loc| grid[loc[0]][loc[1]] }
+    
+    if neighbors.none?(&:bomb?)
+      locations.each_with_index { |loc,idx| 
+        reveal(loc)
+        reveal_neighbors(loc)
+      }
+    end
+  end
+
+  def flag(location)
+    @grid[location[0]][location[1]].flag
+  end
 end
 
 
